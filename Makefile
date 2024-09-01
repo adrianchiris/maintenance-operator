@@ -273,6 +273,14 @@ catalog-build: opm ## Build a catalog image.
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
 
+.PHONY: chart-prepare-release
+chart-prepare-release: | $(YQ) ; ## prepare helm chart for release
+	@GITHUB_TAG=$(GITHUB_TAG) GITHUB_REPO_OWNER=$(GITHUB_REPO_OWNER) hack/release/chart-update.sh
+
+.PHONY: chart-push-release
+chart-push-release: | $(HELM) ## push release helm chart
+	@GITHUB_TAG=$(GITHUB_TAG) GITHUB_TOKEN=$(GITHUB_TOKEN) GITHUB_REPO_OWNER=$(GITHUB_REPO_OWNER) hack/release/chart-push.sh
+
 ##@ Binary Dependencies download
 
 MOCKERY ?= $(LOCALBIN)/mockery
@@ -377,6 +385,13 @@ $(HELM): | $(LOCALBIN)
 		HELM_INSTALL_DIR=$(LOCALBIN) USE_SUDO=false $(LOCALBIN)/get_helm.sh && \
 		rm -f $(LOCALBIN)/get_helm.sh; \
 	}
+
+YQ := $(abspath $(LOCALBIN)/yq)
+YQ_VERSION=v4.44.1
+.PHONY: yq
+yq: $(YQ) ## Download yq locally if necessary.
+$(YQ): | $(LOCALBIN)
+	@curl -fsSL -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_linux_amd64 && chmod +x $(YQ)
 
 ##@ Dev
 
